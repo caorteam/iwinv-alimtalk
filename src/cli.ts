@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import type { Writable } from 'node:stream';
 import { buildDryRun, endpoints, requestApi, resolveBaseUrl } from './client.js';
 import type { Command } from './client.js';
@@ -163,6 +162,12 @@ function writeLine(stream: Pick<Writable, 'write'>, text: string): void {
   stream.write(`${text}\n`);
 }
 
-if (process.argv[1] !== undefined && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) {
-  process.exitCode = await main();
+if (process.argv[1]) {
+  try {
+    if (import.meta.filename === realpathSync(process.argv[1])) {
+      process.exitCode = await main();
+    }
+  } catch {
+    // realpathSync throws ENOENT for synthetic argv[1] from runners like tsx/ts-node
+  }
 }
