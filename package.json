@@ -1,7 +1,7 @@
 {
   "name": "@caor/iwinv-alimtalk",
   "version": "0.1.0",
-  "description": "Dependency-free Node 26 ESM library and CLI for the iwinv Alimtalk API.",
+  "description": "Dependency-free Node 22+ ESM library and CLI for the iwinv Alimtalk API.",
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -21,7 +21,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=26"
+    "node": ">=22"
   },
   "scripts": {
     "clean": "rm -rf dist",

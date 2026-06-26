@@ -1,6 +1,6 @@
 # iwinv Alimtalk CLI
 
-Dependency-free Node 26 ESM CLI for the iwinv Alimtalk API.
+Dependency-free Node 22+ ESM library and CLI for the iwinv Alimtalk API.
 
 ## Install
 

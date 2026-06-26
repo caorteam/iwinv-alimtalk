@@ -1,6 +1,6 @@
 # iwinv 알림톡 CLI
 
-iwinv 알림톡 API를 사용하기 위한 의존성 없는 Node 26 ESM 기반 CLI입니다.
+iwinv 알림톡 API를 사용하기 위한 의존성 없는 Node 22+ ESM 기반 라이브러리이자 CLI입니다.
 
 ## 설치
 
