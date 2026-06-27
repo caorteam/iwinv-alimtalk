@@ -97,3 +97,127 @@ test('help prints usage', async () => {
   assert.match(stdout.output(), /template delete/);
   assert.equal(stderr.output(), '');
 });
+
+test('parseArgs reads -h short flag and the --file value, ignoring holes', () => {
+  assert.equal(parseArgs(['-h']).help, true);
+  assert.equal(parseArgs(['template', 'add', '--file', 'body.json']).file, 'body.json');
+  assert.deepEqual(parseArgs(['charge', undefined as unknown as string]).positionals, ['charge']);
+});
+
+test('parseArgs rejects unknown options', () => {
+  assert.throws(() => parseArgs(['--bogus']), /Unknown option: --bogus/);
+});
+
+test('parseArgs rejects a missing option value', () => {
+  assert.throws(() => parseArgs(['--api-key']), /Missing value for --api-key/);
+  assert.throws(() => parseArgs(['--json', '--pretty']), /Missing value for --json/);
+});
+
+test('parseArgs rejects combining --json and --file', () => {
+  assert.throws(() => parseArgs(['send', '--json', '{}', '--file', 'body.json']), /only one body source/);
+});
+
+test('resolveCommand reports every malformed command shape', () => {
+  assert.throws(() => resolveCommand([]), /Missing command/);
+  assert.throws(() => resolveCommand(['template']), /Missing template subcommand/);
+  assert.throws(() => resolveCommand(['template', 'list', 'extra']), /Unexpected argument: extra/);
+  assert.throws(() => resolveCommand(['template', 'bogus']), /Unknown template subcommand: bogus/);
+  assert.throws(() => resolveCommand(['charge', 'extra']), /Unexpected argument: extra/);
+  assert.throws(() => resolveCommand(['bogus']), /Unknown command: bogus/);
+  assert.throws(() => resolveCommand(['template', 'list', undefined as unknown as string]), /Unexpected argument:/);
+});
+
+test('main returns 1 and writes the error to stderr on failure', async () => {
+  const stdout = memoryWritable();
+  const stderr = memoryWritable();
+  const code = await main(['bogus'], { stdout: stdout.stream, stderr: stderr.stream, stdin: emptyTtyStdin(), env: {} });
+
+  assert.equal(code, 1);
+  assert.equal(stdout.output(), '');
+  assert.match(stderr.output(), /Unknown command: bogus/);
+  assert.match(stderr.output(), /Run with --help for usage/);
+});
+
+test('main falls back to the environment key and default base URL, printing raw text output', async () => {
+  const stdout = memoryWritable();
+  const stderr = memoryWritable();
+  const calls: RequestInit[] = [];
+  const fetchImpl: FetchLike = async (_url, init) => {
+    calls.push(init ?? {});
+    return new Response('plain text', { status: 200 });
+  };
+
+  const code = await main(['charge'], {
+    stdout: stdout.stream,
+    stderr: stderr.stream,
+    stdin: emptyTtyStdin(),
+    env: { IWINV_ALIMTALK_API_KEY: 'env-key' },
+    fetchImpl
+  });
+
+  assert.equal(code, 0);
+  assert.equal(headerValue(calls[0], 'AUTH'), Buffer.from('env-key').toString('base64'));
+  assert.equal(stdout.output(), 'plain text\n');
+  assert.equal(stderr.output(), '');
+});
+
+test('main stringifies a non-Error thrown during the request', async () => {
+  const stdout = memoryWritable();
+  const stderr = memoryWritable();
+  const code = await main(['charge', '--api-key', 'k'], {
+    stdout: stdout.stream,
+    stderr: stderr.stream,
+    stdin: emptyTtyStdin(),
+    env: { IWINV_ALIMTALK_BASE_URL: 'https://mock.example' },
+    fetchImpl: async () => {
+      throw 'network down';
+    }
+  });
+
+  assert.equal(code, 1);
+  assert.match(stderr.output(), /network down/);
+});
+
+test('main falls back to process streams, env, and stdin when no IO is supplied', async () => {
+  // Calling main() with no IO mirrors how bin.ts invokes it, exercising every
+  // `io.x ?? process.x` default. --dry-run avoids the network and --json avoids
+  // reading the real stdin; process.stdout is captured to keep test output clean.
+  const originalWrite = process.stdout.write.bind(process.stdout);
+  let out = '';
+  process.stdout.write = ((chunk: string | Uint8Array) => {
+    out += chunk.toString();
+    return true;
+  }) as typeof process.stdout.write;
+
+  try {
+    const code = await main(['send', '--json', '{"list":[]}', '--dry-run']);
+    assert.equal(code, 0);
+    assert.match(out, /api\/v2\/send\//);
+  } finally {
+    process.stdout.write = originalWrite;
+  }
+});
+
+test('main uses the global fetch when no implementation is injected', async () => {
+  const stdout = memoryWritable();
+  const stderr = memoryWritable();
+  const originalFetch = globalThis.fetch;
+  let used = false;
+  globalThis.fetch = (async () => {
+    used = true;
+    return new Response('{"code":200}', { status: 200 });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const code = await main(['charge', '--api-key', 'k'], {
+      stdout: stdout.stream,
+      stderr: stderr.stream,
+      stdin: emptyTtyStdin(),
+      env: { IWINV_ALIMTALK_BASE_URL: 'https://mock.example' }
+    });
+    assert.equal(code, 0);
+    assert.equal(used, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

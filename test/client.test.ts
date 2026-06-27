@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDryRun, buildHeaders, encodeAuth, requestApi } from '../src/client.js';
+import {
+  ApiError,
+  buildDryRun,
+  buildHeaders,
+  buildUrl,
+  encodeAuth,
+  redactAuth,
+  requestApi,
+  resolveBaseUrl
+} from '../src/client.js';
 
 type FetchCall = {
   url: string | URL | Request;
@@ -83,4 +92,128 @@ test('dry-run redacts auth and does not need a real key', () => {
   assert.equal(auth.includes(Buffer.from('dry-run-api-key').toString('base64')), false);
   assert.equal(result.headers['Content-Type'], 'application/json;charset=UTF-8');
   assert.deepEqual(result.body, { templateCode: '10030' });
+});
+
+test('dry-run for GET command has no body or content type and tolerates empty key', () => {
+  const result = buildDryRun({ command: 'charge', apiKey: '', baseUrl: 'https://mock.example' });
+
+  assert.equal(result.method, 'GET');
+  assert.equal(result.url, 'https://mock.example/api/charge/');
+  assert.equal(result.body, undefined);
+  assert.equal(result.headers['Content-Type'], undefined);
+  assert.equal(result.headers.AUTH?.includes('dry-run-api-key'), false);
+});
+
+test('requestApi throws ApiError carrying status and parsed body on non-ok response', async () => {
+  const fetchImpl: FetchLike = async () =>
+    new Response(JSON.stringify({ code: 400, message: 'bad request' }), { status: 400 });
+
+  await assert.rejects(
+    () => requestApi({ command: 'send', body: {}, apiKey: 'k', baseUrl: 'https://mock.example', fetchImpl }),
+    (error: unknown) => {
+      assert.ok(error instanceof ApiError);
+      assert.equal(error.status, 400);
+      assert.deepEqual(error.body, { code: 400, message: 'bad request' });
+      assert.match(error.message, /HTTP 400/);
+      return true;
+    }
+  );
+});
+
+test('requestApi throws when API key is missing', async () => {
+  const fetchImpl: FetchLike = async () => new Response('{}');
+  await assert.rejects(
+    () => requestApi({ command: 'charge', baseUrl: 'https://mock.example', fetchImpl }),
+    /Missing API key/
+  );
+});
+
+test('requestApi throws when fetch implementation is not a function', async () => {
+  await assert.rejects(
+    () =>
+      requestApi({
+        command: 'charge',
+        apiKey: 'k',
+        baseUrl: 'https://mock.example',
+        fetchImpl: null as unknown as FetchLike
+      }),
+    /fetch is not available/
+  );
+});
+
+test('requestApi defaults POST body to empty object when omitted', async () => {
+  const calls: FetchCall[] = [];
+  const fetchImpl: FetchLike = async (url, init) => {
+    calls.push({ url, init });
+    return new Response('{}', { status: 200 });
+  };
+
+  await requestApi({ command: 'send', apiKey: 'k', baseUrl: 'https://mock.example', fetchImpl });
+
+  assert.equal(calls[0]?.init?.body, '{}');
+});
+
+test('requestApi returns null for an empty response body', async () => {
+  const fetchImpl: FetchLike = async () => new Response('', { status: 200 });
+  const result = await requestApi({ command: 'charge', apiKey: 'k', baseUrl: 'https://mock.example', fetchImpl });
+  assert.equal(result, null);
+});
+
+test('requestApi returns raw text when the response is not JSON', async () => {
+  const fetchImpl: FetchLike = async () => new Response('plain text', { status: 200 });
+  const result = await requestApi({ command: 'charge', apiKey: 'k', baseUrl: 'https://mock.example', fetchImpl });
+  assert.equal(result, 'plain text');
+});
+
+test('redactAuth covers missing, short, and long values', () => {
+  assert.equal(redactAuth(''), '<missing>');
+  assert.equal(redactAuth('12345678'), '<redacted>');
+  assert.equal(redactAuth('123456789'), '1234...6789');
+});
+
+test('buildHeaders omits content type when there is no JSON body', () => {
+  assert.deepEqual(buildHeaders('secret', false), { AUTH: 'c2VjcmV0' });
+});
+
+test('resolveBaseUrl falls back to the default when no override is set', () => {
+  assert.equal(resolveBaseUrl({}), 'https://alimtalk.bizservice.iwinv.kr');
+  assert.equal(resolveBaseUrl({ IWINV_ALIMTALK_BASE_URL: 'https://override.example' }), 'https://override.example');
+});
+
+test('buildUrl normalizes base URLs with and without a trailing slash', () => {
+  assert.equal(buildUrl('https://x.example', '/api/charge/'), 'https://x.example/api/charge/');
+  assert.equal(buildUrl('https://x.example/', '/api/charge/'), 'https://x.example/api/charge/');
+});
+
+test('ApiError defaults status and body when constructed without details', () => {
+  const error = new ApiError('boom');
+  assert.equal(error.name, 'ApiError');
+  assert.equal(error.status, undefined);
+  assert.equal(error.body, undefined);
+});
+
+test('requestApi defaults the base URL and global fetch when both are omitted', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: (string | URL | Request)[] = [];
+  globalThis.fetch = (async (url: string | URL | Request) => {
+    calls.push(url);
+    return new Response('{"code":200}', { status: 200 });
+  }) as typeof globalThis.fetch;
+
+  try {
+    await requestApi({ command: 'charge', apiKey: 'k' });
+    assert.match(String(calls[0]), /alimtalk\.bizservice\.iwinv\.kr\/api\/charge\//);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('buildDryRun defaults the base URL when none is provided', () => {
+  const result = buildDryRun({ command: 'charge' });
+  assert.match(result.url, /^https:\/\/alimtalk\.bizservice\.iwinv\.kr\/api\/charge\/$/);
+});
+
+test('buildDryRun defaults a POST body to an empty object when omitted', () => {
+  const result = buildDryRun({ command: 'send', baseUrl: 'https://mock.example' });
+  assert.deepEqual(result.body, {});
 });
