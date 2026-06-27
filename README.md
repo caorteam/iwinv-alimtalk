@@ -4,24 +4,42 @@ Dependency-free Node 22+ ESM library and CLI for the iwinv Alimtalk API.
 
 ## Install
 
-Use Node.js 26 or newer.
+Requires Node.js 22 or newer.
+
+### As a CLI
 
 ```sh
-npm install
-npm run build
-npm link
-```
-
-After linking, run:
-
-```sh
+npm install -g @caor/iwinv-alimtalk
 iwinv-alimtalk --help
 ```
 
-You can also run without linking:
+Or run it without installing:
 
 ```sh
-node ./dist/src/cli.js --help
+npx @caor/iwinv-alimtalk --help
+```
+
+### As a library
+
+```sh
+npm install @caor/iwinv-alimtalk
+```
+
+```js
+import { requestApi, ApiError } from '@caor/iwinv-alimtalk';
+
+try {
+  const result = await requestApi({
+    command: 'send',
+    apiKey: process.env.IWINV_ALIMTALK_API_KEY,
+    body: { templateCode: '10030', list: [{ phone: '01012341234', templateParam: ['홍길동'] }] }
+  });
+  console.log(result);
+} catch (error) {
+  if (error instanceof ApiError) {
+    console.error(error.status, error.body);
+  }
+}
 ```
 
 ## Environment Variables
@@ -134,14 +152,22 @@ Tests and smoke checks should use injected or mocked `fetch` and must not call t
 
 ## Development
 
-The source is strict TypeScript under `src/` and tests are TypeScript under `test/`. Build output is emitted to `dist/`; the package binary points at `dist/src/cli.js`.
+The source is strict TypeScript under `src/` and tests are TypeScript under `test/`. Build output is emitted to `dist/`; the CLI entry point is `dist/src/bin.js` and the library entry point is `dist/src/index.js`.
+
+To build and run from source:
 
 ```sh
+npm install
 npm run build
+node ./dist/src/bin.js --help
 ```
 
 ```sh
 npm test
 ```
 
-`npm test` runs the TypeScript build first, then executes the compiled tests from `dist/test`. The package has no runtime dependencies and uses Node's built-in `node:test`, `assert`, `fetch`, and `Buffer` APIs.
+```sh
+npm run test:coverage
+```
+
+`npm test` runs the TypeScript build first, then executes the compiled tests from `dist/test`. `npm run test:coverage` additionally enforces 100% line, branch, and function coverage on `src/` (requires Node 22.8+). The package has no runtime dependencies and uses Node's built-in `node:test`, `assert`, `fetch`, and `Buffer` APIs.
