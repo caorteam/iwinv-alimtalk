@@ -5,12 +5,21 @@ name: publish
 # was built from this repo by this workflow.
 #
 # Authentication uses npm Trusted Publishing (OIDC), not a long-lived
-# token. The npm package must be configured to trust this workflow once:
-#   https://docs.npmjs.com/generating-provenance-statements#publishing-packages-with-provenance-via-github-actions
+# token. Two prerequisites must both hold or the publish fails:
 #
-# Until Trusted Publishing is enabled on the package, this workflow
-# will fail at the auth step. Fall back to setting NPM_TOKEN in the
-# repository secrets and swapping the auth step below.
+#   1. npm CLI >= 11.5.1 on the runner. Node 22 ships npm 10.9.x, which
+#      has NO OIDC support — with no token it falls straight through to
+#      ENEEDAUTH. The "Upgrade npm" step below pulls a version that can
+#      mint an OIDC token.
+#   2. The package must list this repo + workflow as a Trusted Publisher:
+#        npmjs.com -> @caor/iwinv-alimtalk -> Settings -> Publishing access
+#        -> Trusted Publisher -> GitHub Actions
+#          Organization/user:  caorteam
+#          Repository:         iwinv-alimtalk
+#          Workflow filename:  publish.yml
+#      Until that is configured, OIDC exchange is rejected by the registry.
+#
+# See: https://docs.npmjs.com/trusted-publishers
 
 on:
   release:
@@ -33,6 +42,11 @@ jobs:
           node-version: 22.x
           registry-url: "https://registry.npmjs.org"
 
+      # Node 22 bundles npm 10.9.x, which predates OIDC Trusted Publishing.
+      # Upgrade to a version (>= 11.5.1) that can mint an OIDC token.
+      - name: Upgrade npm for Trusted Publishing (OIDC)
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci
 
@@ -48,10 +62,9 @@ jobs:
       - name: Enforce 100% coverage gate
         run: npm run test:coverage
 
-      # Authenticated with NPM_TOKEN (granular access token, bypass 2FA).
-      # setup-node's registry-url above exports NODE_AUTH_TOKEN to the
-      # environment using the secret value; npm uses it directly.
+      # No NODE_AUTH_TOKEN: with npm >= 11.5.1 and `id-token: write`, npm
+      # detects the GitHub Actions OIDC environment, exchanges it for a
+      # short-lived registry token via the package's Trusted Publisher
+      # config, and attaches provenance automatically.
       - name: Publish to npm with provenance
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
