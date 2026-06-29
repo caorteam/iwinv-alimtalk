@@ -57,6 +57,7 @@ The `endpoints` table in [src/client.ts](src/client.ts) is the single source of 
 - `--json` and `--file` are mutually exclusive.
 - `--api-key` flag overrides the `IWINV_ALIMTALK_API_KEY` environment variable (flag wins).
 - Body-having endpoints reject runs without exactly one of `--json`/`--file`/stdin.
+- `--help` / `-h` **must be used alone**. Mixing it with any positional or other flag (commands, `--api-key`, `--json`, `--file`, `--dry-run`, `--pretty`) throws `--help must be used alone; it cannot be combined with other arguments.` This prevents `--help` from masking real parse errors (e.g. malformed JSON).
 
 ### Testing
 - **Framework**: Node built-in `node:test` + `node:assert/strict`. No Jest/Vitest.
@@ -72,6 +73,7 @@ The `endpoints` table in [src/client.ts](src/client.ts) is the single source of 
 
 - **`engines.node >= 22`** and `src/client.ts` error messages now match (`Node 22+ built-in fetch is required`). Keep these in sync if either side changes.
 - The single-source body rule is enforced in **two places** (`cli.ts` and `input.ts`) as defense-in-depth. Don't consolidate them unless you can prove equivalence.
+- **Dry-run AUTH header safety**: `buildDryRun` substitutes the exported `DRY_RUN_PLACEHOLDER` constant when the API key is omitted **or empty**. The placeholder value must never appear verbatim in the redacted AUTH header — tests in [test/client.test.ts](test/client.test.ts) assert this. Empty-string keys MUST NOT produce an empty AUTH header.
 - Dist is the runtime artifact — never `gitignore` it (it's in `package.json#files`). Don't hand-edit anything under `dist/`.
 
 ## Documentation

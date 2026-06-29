@@ -30,6 +30,11 @@ applyTo: "test/**/*.ts"
 
 - Use `tmpdir` for `--file` scenarios. Write the file, run the assertion, delete it in a `finally` block.
 
+## CLI argument policies under test
+
+- **`--help` / `-h` must be tested as standalone-only.** Add a parallel `parseArgs` test asserting that pairing `--help` with positionals, `--api-key`, `--json`, `--file`, `--dry-run`, or `--pretty` throws. The corresponding `main(...)` test must assert exit code 1, an empty stdout, and an stderr containing the parse error (the "Run with --help for usage." hint is appended by `main()`).
+- **Dry-run AUTH safety.** When adding tests that exercise `buildDryRun`, import `DRY_RUN_PLACEHOLDER` from `../src/client.js` rather than the literal string. Assert: (a) the placeholder value never appears verbatim in the redacted AUTH, and (b) omitted/empty `apiKey` produce identical headers.
+
 ## Coverage gate
 
 `npm run test:coverage` enforces **100/100/100** (line/branch/function). Before merging:
