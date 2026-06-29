@@ -1,51 +1,54 @@
 import type { Writable } from 'node:stream';
+import type { FetchLike } from './util.js';
 import type { Command } from './client.js';
 import type { JsonInputStdin } from './input.js';
 
-import { readJsonBody } from './input.js';
 import { buildDryRun, endpoints, requestApi, resolveBaseUrl } from './client.js';
+import { readJsonBody } from './input.js';
+import { BODY_SOURCE_ERROR, toErrorMessage } from './util.js';
 
-const helpText = `iwinv-alimtalk - iwinv Alimtalk API CLI
+function buildHelpText(): string {
+  const lines = ['iwinv-alimtalk - iwinv Alimtalk API CLI', '', 'Usage:'];
+  lines.push('  iwinv-alimtalk [global options] <command> [command] [body options]');
+  lines.push('');
+  lines.push('Commands:');
 
-Usage:
-  iwinv-alimtalk [global options] <command> [command] [body options]
+  const names = Object.keys(endpoints) as Command[];
+  const maxLen = names.reduce((m, n) => Math.max(m, n.length), 0);
+  for (const name of names) {
+    const ep = endpoints[name];
+    const padding = ' '.repeat(maxLen - name.length);
+    lines.push(`  ${name}${padding}  ${ep.method} ${ep.path}`);
+  }
 
-Commands:
-  send                 POST /api/v2/send/
-  template list        POST /api/template/
-  template add         POST /api/template/add/
-  template modify      POST /api/template/modify/
-  template delete      POST /api/template/delete/
-  history              POST /api/history/
-  cancel               POST /api/cancel/
-  charge               GET  /api/charge/
-
-Global options:
-  --api-key <key>      API key. Overrides IWINV_ALIMTALK_API_KEY.
-  --json '<json>'      JSON request body.
-  --file <path>        Read JSON request body from a file.
-  --dry-run            Print request details without sending a network request.
-  --pretty             Pretty-print JSON output.
-  --help, -h           Show this help.
-
-Environment:
-  IWINV_ALIMTALK_API_KEY   API key used when --api-key is omitted.
-  IWINV_ALIMTALK_BASE_URL  Override the API base URL for tests or mocks.
-
-Examples:
-  iwinv-alimtalk charge --api-key "$IWINV_ALIMTALK_API_KEY" --pretty
-  iwinv-alimtalk send --json '{"templateCode":"10030","list":[{"phone":"01012341234","templateParam":["A"]}]}'
-  iwinv-alimtalk template list --json '{"pageNum":"1","pageSize":"10"}' --pretty
-  iwinv-alimtalk template add --file template.json
-  cat history.json | iwinv-alimtalk history --pretty
-  iwinv-alimtalk send --json '{"templateCode":"10030","list":[]}' --dry-run --pretty
-`;
-
-type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+  lines.push(
+    '',
+    'Global options:',
+    '  --api-key <key>      API key. Overrides IWINV_ALIMTALK_API_KEY.',
+    "  --json '<json>'      JSON request body.",
+    '  --file <path>        Read JSON request body from a file.',
+    '  --dry-run            Print request details without sending a network request.',
+    '  --pretty             Pretty-print JSON output.',
+    '  --help, -h           Show this help.',
+    '',
+    'Environment:',
+    '  IWINV_ALIMTALK_API_KEY   API key used when --api-key is omitted.',
+    '  IWINV_ALIMTALK_BASE_URL  Override the API base URL for tests or mocks.',
+    '',
+    'Examples:',
+    '  iwinv-alimtalk charge --api-key "$IWINV_ALIMTALK_API_KEY" --pretty',
+    '  iwinv-alimtalk send --json \'{"templateCode":"10030","list":[{"phone":"01012341234","templateParam":["A"]}]}\'',
+    '  iwinv-alimtalk template list --json \'{"pageNum":"1","pageSize":"10"}\' --pretty',
+    '  iwinv-alimtalk template add --file template.json',
+    '  cat history.json | iwinv-alimtalk history --pretty',
+    '  iwinv-alimtalk send --json \'{"templateCode":"10030","list":[]}\' --dry-run --pretty'
+  );
+  return lines.join('\n');
+}
 
 type CliIo = {
-  stdout?: Pick<Writable, 'write'>;
-  stderr?: Pick<Writable, 'write'>;
+  stdout?: Writable;
+  stderr?: Writable;
   stdin?: JsonInputStdin;
   env?: NodeJS.ProcessEnv | undefined;
   fetchImpl?: FetchLike | undefined;
@@ -72,7 +75,7 @@ export async function main(
   try {
     const parsed = parseArgs(argv);
     if (parsed.help) {
-      writeLine(stdout, helpText.trimEnd());
+      writeLine(stdout, buildHelpText());
       return 0;
     }
 
@@ -100,8 +103,7 @@ export async function main(
     writeLine(stdout, formatOutput(result, parsed.pretty));
     return 0;
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    writeLine(stderr, `${message}\n\nRun with --help for usage.`);
+    writeLine(stderr, `${toErrorMessage(error)}\n\nRun with --help for usage.`);
     return 1;
   }
 }
@@ -137,7 +139,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   }
 
   if (options.json !== undefined && options.file !== undefined) {
-    throw new Error('Use only one body source: --json, --file, or stdin.');
+    throw new Error(BODY_SOURCE_ERROR);
   }
 
   // --help must be used alone. Mixing it with commands or other flags would
@@ -187,6 +189,6 @@ function formatOutput(value: unknown, pretty: boolean): string {
   return JSON.stringify(value, null, pretty ? 2 : 0);
 }
 
-function writeLine(stream: Pick<Writable, 'write'>, text: string): void {
+function writeLine(stream: Writable, text: string): void {
   stream.write(`${text}\n`);
 }
