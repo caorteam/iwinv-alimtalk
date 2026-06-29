@@ -1,3 +1,5 @@
+import type { FetchLike } from '../src/util.js';
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -13,18 +15,12 @@ import {
   resolveBaseUrl
 } from '../src/client.js';
 
+import { headerValue } from './helpers.js';
+
 type FetchCall = {
   url: string | URL | Request;
   init: RequestInit | undefined;
 };
-
-type FetchLike = (url: string | URL | Request, init?: RequestInit) => Promise<Response>;
-
-function headerValue(init: RequestInit | undefined, name: string): string | undefined {
-  if (!init?.headers || init.headers instanceof Headers || Array.isArray(init.headers))
-    return undefined;
-  return init.headers[name];
-}
 
 test('encodes AUTH as base64 utf8 API key', () => {
   assert.equal(encodeAuth('키-abc'), Buffer.from('키-abc', 'utf8').toString('base64'));

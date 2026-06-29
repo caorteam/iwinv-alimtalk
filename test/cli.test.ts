@@ -1,39 +1,20 @@
-import type { JsonInputStdin } from '../src/input.js';
+import type { FetchLike } from '../src/util.js';
 
 import assert from 'node:assert/strict';
-import { Readable, Writable } from 'node:stream';
 import test from 'node:test';
 
 import { main, parseArgs, resolveCommand } from '../src/cli.js';
 import { DRY_RUN_PLACEHOLDER } from '../src/client.js';
 
-type FetchLike = (url: string | URL | Request, init?: RequestInit) => Promise<Response>;
+import { memoryWritable, emptyTtyStdin, headerValue } from './helpers.js';
 
-function memoryWritable(): { stream: Writable; output: () => string } {
-  let output = '';
-  return {
-    stream: new Writable({
-      write(
-        chunk: Buffer | string,
-        _encoding: BufferEncoding,
-        callback: (error?: Error | null) => void
-      ) {
-        output += chunk.toString();
-        callback();
-      }
-    }),
-    output: () => output
+function recordFetchCalls(): { fetchImpl: FetchLike; calls: RequestInit[] } {
+  const calls: RequestInit[] = [];
+  const fetchImpl: FetchLike = async (_url, init) => {
+    calls.push(init ?? {});
+    return new Response('{"code":200}', { status: 200 });
   };
-}
-
-function emptyTtyStdin(): JsonInputStdin {
-  return Object.assign(Readable.from([]), { isTTY: true });
-}
-
-function headerValue(init: RequestInit | undefined, name: string): string | undefined {
-  if (!init?.headers || init.headers instanceof Headers || Array.isArray(init.headers))
-    return undefined;
-  return init.headers[name];
+  return { fetchImpl, calls };
 }
 
 test('parses commands and options', () => {
@@ -48,11 +29,7 @@ test('parses commands and options', () => {
 test('flag API key takes precedence over environment key', async () => {
   const stdout = memoryWritable();
   const stderr = memoryWritable();
-  const calls: RequestInit[] = [];
-  const fetchImpl: FetchLike = async (_url, init) => {
-    calls.push(init ?? {});
-    return new Response('{"code":200}', { status: 200 });
-  };
+  const { fetchImpl, calls } = recordFetchCalls();
 
   const code = await main(['charge', '--api-key', 'flag-key'], {
     stdout: stdout.stream,
@@ -209,18 +186,17 @@ test('main returns 1 and writes the error to stderr on failure', async () => {
 test('main falls back to the environment key and default base URL, printing raw text output', async () => {
   const stdout = memoryWritable();
   const stderr = memoryWritable();
-  const calls: RequestInit[] = [];
-  const fetchImpl: FetchLike = async (_url, init) => {
-    calls.push(init ?? {});
-    return new Response('plain text', { status: 200 });
-  };
+  const { calls } = recordFetchCalls();
 
   const code = await main(['charge'], {
     stdout: stdout.stream,
     stderr: stderr.stream,
     stdin: emptyTtyStdin(),
     env: { IWINV_ALIMTALK_API_KEY: 'env-key' },
-    fetchImpl
+    fetchImpl: async (_url, init) => {
+      calls.push(init ?? {});
+      return new Response('plain text', { status: 200 });
+    }
   });
 
   assert.equal(code, 0);
