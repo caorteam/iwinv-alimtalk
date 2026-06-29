@@ -1,0 +1,7 @@
+dist/
+node_modules/
+coverage/
+reports/
+package-lock.json
+*.lcov
+node-test-junit.xml
