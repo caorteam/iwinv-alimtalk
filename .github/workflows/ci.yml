@@ -51,6 +51,15 @@ jobs:
       - name: Enforce 100% coverage gate
         run: npm run test:coverage
 
+      # Always publish a JUnit report. The test reporter writes
+      # node-test-junit.xml under the cwd. We pin to one matrix cell
+      # so duplicate artifacts across OS/Node are avoided.
+      - name: Generate JUnit report
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        run: |
+          mkdir -p reports
+          node --test --test-reporter=junit --test-reporter-destination=reports/node-test-junit.xml dist/test/*.test.js
+
       - name: Upload coverage report
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         uses: actions/upload-artifact@v4
@@ -60,4 +69,13 @@ jobs:
             dist/coverage
             *.lcov
           if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload JUnit report
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-report
+          path: reports/node-test-junit.xml
+          if-no-files-found: warn
           retention-days: 14
