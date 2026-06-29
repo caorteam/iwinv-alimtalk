@@ -15,6 +15,7 @@ name: publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 # Default token only; we'll mint a short-lived npm token via OIDC.
 permissions:
@@ -53,7 +54,8 @@ jobs:
 
       # Trusted Publishing via OIDC. Remove the next step and set
       # NPM_TOKEN in repo secrets if OIDC is not yet configured.
-      - name: Publish to npm with provenance
+      - name: Publish to npm with provenance (verbose)
         run: npm publish --provenance --access public
         env:
+          NPM_CONFIG_LOGLEVEL: verbose
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
