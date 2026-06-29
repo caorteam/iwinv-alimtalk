@@ -2,6 +2,7 @@ import { Writable, Readable } from 'node:stream';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { main, parseArgs, resolveCommand } from '../src/cli.js';
+import { DRY_RUN_PLACEHOLDER } from '../src/client.js';
 import type { JsonInputStdin } from '../src/input.js';
 
 type FetchLike = (url: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -82,7 +83,7 @@ test('dry-run does not call fetch and prints redacted request details', async ()
   };
   assert.equal(output.method, 'POST');
   assert.equal(output.url, 'https://mock.example/api/v2/send/');
-  assert.equal(output.headers.AUTH.includes('dry-run-api-key'), false);
+  assert.equal(output.headers.AUTH.includes(DRY_RUN_PLACEHOLDER), false);
   assert.deepEqual(output.body, { templateCode: '10030', list: [] });
   assert.equal(stderr.output(), '');
 });
