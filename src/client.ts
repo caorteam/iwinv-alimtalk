@@ -1,6 +1,14 @@
 const DEFAULT_BASE_URL = 'https://alimtalk.bizservice.iwinv.kr';
 const JSON_CONTENT_TYPE = 'application/json;charset=UTF-8';
 
+/**
+ * Stable placeholder substituted for the API key in dry-run output.
+ *
+ * The literal value is intentionally not exposed in error messages or help
+ * text so that the redacted AUTH header is the only place it appears.
+ */
+export const DRY_RUN_PLACEHOLDER = 'dry-run-api-key';
+
 type HttpMethod = 'GET' | 'POST';
 
 type Endpoint = {
@@ -119,12 +127,17 @@ export async function requestApi({
 export function buildDryRun({
   command,
   body,
-  apiKey = 'dry-run-api-key',
+  apiKey,
   baseUrl = DEFAULT_BASE_URL
 }: DryRunOptions): DryRunRequest {
   const endpoint = endpoints[command];
   const hasJsonBody = endpoint.method !== 'GET';
-  const auth = encodeAuth(apiKey || 'dry-run-api-key');
+  // Callers must supply an explicit apiKey (or omit, which uses the
+  // placeholder). We deliberately do NOT fall back on empty strings:
+  // a missing key in a dry-run means "show what the request would look
+  // like", not "send an empty AUTH header".
+  const key = apiKey && apiKey.length > 0 ? apiKey : DRY_RUN_PLACEHOLDER;
+  const auth = encodeAuth(key);
   const headers: Record<string, string> = { AUTH: redactAuth(auth) };
   if (hasJsonBody) headers['Content-Type'] = JSON_CONTENT_TYPE;
   return {

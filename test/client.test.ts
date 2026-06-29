@@ -5,6 +5,7 @@ import {
   buildDryRun,
   buildHeaders,
   buildUrl,
+  DRY_RUN_PLACEHOLDER,
   encodeAuth,
   redactAuth,
   requestApi,
@@ -88,8 +89,8 @@ test('dry-run redacts auth and does not need a real key', () => {
   if (auth === undefined) assert.fail('dry-run AUTH header missing');
   assert.equal(result.method, 'POST');
   assert.equal(result.url, 'https://mock.example/api/template/delete/');
-  assert.equal(auth.includes('dry-run-api-key'), false);
-  assert.equal(auth.includes(Buffer.from('dry-run-api-key').toString('base64')), false);
+  assert.equal(auth.includes(DRY_RUN_PLACEHOLDER), false);
+  assert.equal(auth.includes(encodeAuth(DRY_RUN_PLACEHOLDER)), false);
   assert.equal(result.headers['Content-Type'], 'application/json;charset=UTF-8');
   assert.deepEqual(result.body, { templateCode: '10030' });
 });
@@ -101,7 +102,7 @@ test('dry-run for GET command has no body or content type and tolerates empty ke
   assert.equal(result.url, 'https://mock.example/api/charge/');
   assert.equal(result.body, undefined);
   assert.equal(result.headers['Content-Type'], undefined);
-  assert.equal(result.headers.AUTH?.includes('dry-run-api-key'), false);
+  assert.equal(result.headers.AUTH?.includes(DRY_RUN_PLACEHOLDER), false);
 });
 
 test('requestApi throws ApiError carrying status and parsed body on non-ok response', async () => {
@@ -169,6 +170,49 @@ test('redactAuth covers missing, short, and long values', () => {
   assert.equal(redactAuth(''), '<missing>');
   assert.equal(redactAuth('12345678'), '<redacted>');
   assert.equal(redactAuth('123456789'), '1234...6789');
+});
+
+test('DRY_RUN_PLACEHOLDER is exported and never appears verbatim in AUTH headers', () => {
+  // The placeholder is intentionally a private constant value. Tests must
+  // not assume its exact content; instead, verify that whatever it is, it
+  // never leaks into a redacted AUTH header.
+  assert.equal(typeof DRY_RUN_PLACEHOLDER, 'string');
+  assert.ok(DRY_RUN_PLACEHOLDER.length > 0);
+  const placeholderAuth = encodeAuth(DRY_RUN_PLACEHOLDER);
+  assert.equal(redactAuth(placeholderAuth).includes(DRY_RUN_PLACEHOLDER), false);
+});
+
+test('buildDryRun substitutes a placeholder when apiKey is omitted', () => {
+  const result = buildDryRun({ command: 'send', body: {}, baseUrl: 'https://mock.example' });
+  const auth = result.headers.AUTH;
+  if (auth === undefined) assert.fail('AUTH header missing in dry-run output');
+  // Header must be redacted — never the real placeholder base64.
+  assert.notEqual(auth, encodeAuth(DRY_RUN_PLACEHOLDER));
+  assert.equal(auth.includes('real-key'), false);
+});
+
+test('buildDryRun substitutes a placeholder when apiKey is an empty string', () => {
+  const result = buildDryRun({ command: 'send', body: {}, apiKey: '', baseUrl: 'https://mock.example' });
+  const auth = result.headers.AUTH;
+  if (auth === undefined) assert.fail('AUTH header missing in dry-run output');
+  // Even an explicit empty string must not leak through as an empty AUTH.
+  assert.notEqual(auth, '');
+  // The placeholder-driven header should match what we get with no key.
+  const noKey = buildDryRun({ command: 'send', body: {}, baseUrl: 'https://mock.example' });
+  assert.equal(auth, noKey.headers.AUTH);
+});
+
+test('buildDryRun redacts a caller-supplied real key the same way', () => {
+  const realKey = 'this-is-a-real-secret-key-1234567890';
+  const result = buildDryRun({ command: 'send', body: {}, apiKey: realKey, baseUrl: 'https://mock.example' });
+  const auth = result.headers.AUTH;
+  if (auth === undefined) assert.fail('AUTH header missing in dry-run output');
+  // Real key bytes must never appear verbatim in the redacted header.
+  assert.equal(auth.includes(realKey), false);
+  assert.equal(auth.includes(encodeAuth(realKey)), false);
+  // Long base64 gets the standard 4-char prefix/suffix redaction.
+  const expected = redactAuth(encodeAuth(realKey));
+  assert.equal(auth, expected);
 });
 
 test('buildHeaders omits content type when there is no JSON body', () => {
