@@ -15,7 +15,6 @@ name: publish
 on:
   release:
     types: [published]
-  workflow_dispatch:
 
 # Default token only; we'll mint a short-lived npm token via OIDC.
 permissions:
