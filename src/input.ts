@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 
+import { BODY_SOURCE_ERROR, toErrorMessage } from './util.js';
+
 export type JsonInputStdin = AsyncIterable<string | Buffer> & {
   isTTY?: boolean;
   setEncoding?: (encoding: BufferEncoding) => unknown;
@@ -17,7 +19,7 @@ export async function readJsonBody({
   stdin = process.stdin
 }: ReadJsonBodyOptions = {}): Promise<unknown> {
   const explicitSources = (json !== undefined ? 1 : 0) + (file !== undefined ? 1 : 0);
-  if (explicitSources > 1) throw new Error('Use only one body source: --json, --file, or stdin.');
+  if (explicitSources > 1) throw new Error(BODY_SOURCE_ERROR);
 
   let text: string;
   if (json !== undefined) {
@@ -32,8 +34,7 @@ export async function readJsonBody({
   try {
     return JSON.parse(text) as unknown;
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Invalid JSON body: ${message}`);
+    throw new Error(`Invalid JSON body: ${toErrorMessage(error)}`);
   }
 }
 
