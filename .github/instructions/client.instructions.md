@@ -16,8 +16,8 @@ The `endpoints` table in [src/client.ts](../src/client.ts) is the **single sourc
 
 ## AUTH header
 
-- The `IWINV_API_KEY` is UTF-8 base64-encoded into the `AUTH` header (raw key bytes → base64 string). Do not use `btoa`/`atob` shortcuts; use `Buffer.from(key, 'utf8').toString('base64')`.
-- `--api-key` flag overrides the `IWINV_API_KEY` env var. Flag wins.
+- The `IWINV_ALIMTALK_API_KEY` is UTF-8 base64-encoded into the `AUTH` header (raw key bytes → base64 string). Do not use `btoa`/`atob` shortcuts; use `Buffer.from(key, 'utf8').toString('base64')`.
+- `--api-key` flag overrides the `IWINV_ALIMTALK_API_KEY` env var. Flag wins.
 
 ## Request shape
 
@@ -33,9 +33,10 @@ The `endpoints` table in [src/client.ts](../src/client.ts) is the **single sourc
 
 - `buildDryRun` returns the **outgoing request** (method, URL, headers, body) without calling `fetch`. It must mirror the real request 1:1 — when in doubt, refactor to share a builder.
 - Coverage requires that the dry-run path is exercised even when the live path is also tested.
+- **Key safety**: `buildDryRun` accepts an optional `apiKey`. When omitted **or empty**, it substitutes the exported `DRY_RUN_PLACEHOLDER` constant. Never fall back on `''` (empty string) silently — that would emit an empty `AUTH` header. The AUTH output is **always** passed through `redactAuth`, so both placeholder base64 and real keys appear as `<redacted>` (or `1234...cdef` for long values). Tests assert that the placeholder string itself never appears verbatim in the redacted header.
 
 ## Things to watch out for
 
-- The error messages mention **Node 26 fetch behavior**, but `engines.node` is `>=22`. If you change those messages, reconcile the version claim with [package.json](../package.json).
 - The `endpoints` table is `Object.freeze`-d with `satisfies Record<...>`. Don't loosen it.
 - `noUncheckedIndexedAccess` is on → index access into headers / `endpoints` is `T | undefined`. Narrow before use.
+- The "fetch is not available" error message references `Node 22+` to match `engines.node`. Keep both sides in sync if either changes.
