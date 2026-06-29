@@ -55,7 +55,7 @@ The `endpoints` table in [src/client.ts](src/client.ts) is the single source of 
 ### CLI argument parsing
 - Manual loop in `parseArgs`; reject unknown options explicitly.
 - `--json` and `--file` are mutually exclusive.
-- `--api-key` flag overrides the `IWINV_API_KEY` environment variable (flag wins).
+- `--api-key` flag overrides the `IWINV_ALIMTALK_API_KEY` environment variable (flag wins).
 - Body-having endpoints reject runs without exactly one of `--json`/`--file`/stdin.
 
 ### Testing
