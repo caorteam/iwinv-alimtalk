@@ -1,3 +1,5 @@
+import type { JsonInputStdin } from '../src/input.js';
+
 import { Readable } from 'node:stream';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -6,8 +8,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { readJsonBody } from '../src/input.js';
-
-import type { JsonInputStdin } from '../src/input.js';
 
 function readableStdin(chunks: string[], isTTY: boolean): JsonInputStdin {
   return Object.assign(Readable.from(chunks), { isTTY });

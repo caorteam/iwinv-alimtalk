@@ -78,7 +78,14 @@ export default [
       'import/order': [
         'error',
         {
-          groups: ['builtin', 'external', 'parent', 'sibling', 'index', 'type'],
+          // Group order matches AGENTS.md → Import ordering:
+          //   1. type-only imports (any source)
+          //   2. builtin value imports (node:*)
+          //   3. external value imports
+          //   4. parent (../) value imports
+          //   5. sibling (./) value imports
+          //   6. index value imports
+          groups: ['type', 'builtin', 'external', 'parent', 'sibling', 'index'],
           'newlines-between': 'always',
           alphabetize: {
             order: 'ignore',

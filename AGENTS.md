@@ -55,14 +55,14 @@ The `endpoints` table in [src/client.ts](src/client.ts) is the single source of 
 
 ### Import ordering
 
-The project has no automatic formatter (no Prettier, no ESLint), so the import order is enforced by humans. Follow this rule in every `.ts` file unless the file is already consistent with a different convention:
+ESLint's `import/order` plugin enforces this automatically (see [eslint.config.js](eslint.config.js)). The rule below documents the contract ESLint checks so reviewers and contributors understand the _why_:
 
-1. **First block** — Node and external type-only imports, one per line:
+1. **First block** — type-only imports, one per line:
    ```ts
    import type { Writable } from 'node:stream';
    import type { Command } from './client.js';
    ```
-2. **Second block** — value imports for Node and external modules, one per line:
+2. **Second block** — value imports for Node built-ins, external modules, and internal modules, one per line:
    ```ts
    import assert from 'node:assert/strict';
    import { Readable, Writable } from 'node:stream';
@@ -71,6 +71,8 @@ The project has no automatic formatter (no Prettier, no ESLint), so the import o
    ```
 3. Within each block, order alphabetically by module specifier (case-insensitive). When a module exports both a type and a value, place the type-only form first.
 4. Never mix type-only and value imports on the same line.
+
+Prettier handles formatting (quotes, width, trailing comma). ESLint handles logic (import order, no-unused-vars). Both run on pre-commit via lint-staged and on every PR via the CI workflow.
 
 This keeps `verbatimModuleSyntax` happy and produces stable diffs when modules are added or moved.
 
