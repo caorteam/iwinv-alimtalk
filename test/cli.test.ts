@@ -1,21 +1,10 @@
-import type { FetchLike } from '../src/util.js';
-
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { main, parseArgs, resolveCommand } from '../src/cli.js';
 import { DRY_RUN_PLACEHOLDER } from '../src/client.js';
 
-import { memoryWritable, emptyTtyStdin, headerValue } from './helpers.js';
-
-function recordFetchCalls(): { fetchImpl: FetchLike; calls: RequestInit[] } {
-  const calls: RequestInit[] = [];
-  const fetchImpl: FetchLike = async (_url, init) => {
-    calls.push(init ?? {});
-    return new Response('{"code":200}', { status: 200 });
-  };
-  return { fetchImpl, calls };
-}
+import { emptyTtyStdin, fetchRecorder, headerValue, memoryWritable } from './helpers.js';
 
 test('parses commands and options', () => {
   assert.deepEqual(parseArgs(['template', 'list', '--json', '{}', '--pretty']).positionals, [
@@ -29,7 +18,7 @@ test('parses commands and options', () => {
 test('flag API key takes precedence over environment key', async () => {
   const stdout = memoryWritable();
   const stderr = memoryWritable();
-  const { fetchImpl, calls } = recordFetchCalls();
+  const { fetchImpl, calls } = fetchRecorder();
 
   const code = await main(['charge', '--api-key', 'flag-key'], {
     stdout: stdout.stream,
@@ -40,7 +29,7 @@ test('flag API key takes precedence over environment key', async () => {
   });
 
   assert.equal(code, 0);
-  assert.equal(headerValue(calls[0], 'AUTH'), Buffer.from('flag-key').toString('base64'));
+  assert.equal(headerValue(calls[0]?.init, 'AUTH'), Buffer.from('flag-key').toString('base64'));
   assert.equal(stderr.output(), '');
 });
 
@@ -186,21 +175,18 @@ test('main returns 1 and writes the error to stderr on failure', async () => {
 test('main falls back to the environment key and default base URL, printing raw text output', async () => {
   const stdout = memoryWritable();
   const stderr = memoryWritable();
-  const { calls } = recordFetchCalls();
+  const { fetchImpl, calls } = fetchRecorder(() => new Response('plain text', { status: 200 }));
 
   const code = await main(['charge'], {
     stdout: stdout.stream,
     stderr: stderr.stream,
     stdin: emptyTtyStdin(),
     env: { IWINV_ALIMTALK_API_KEY: 'env-key' },
-    fetchImpl: async (_url, init) => {
-      calls.push(init ?? {});
-      return new Response('plain text', { status: 200 });
-    }
+    fetchImpl
   });
 
   assert.equal(code, 0);
-  assert.equal(headerValue(calls[0], 'AUTH'), Buffer.from('env-key').toString('base64'));
+  assert.equal(headerValue(calls[0]?.init, 'AUTH'), Buffer.from('env-key').toString('base64'));
   assert.equal(stdout.output(), 'plain text\n');
   assert.equal(stderr.output(), '');
 });

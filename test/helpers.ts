@@ -30,14 +30,15 @@ export function headerValue(init: RequestInit | undefined, name: string): string
   return init.headers[name];
 }
 
-export function fetchRecorder(): {
+export function fetchRecorder(responseFactory?: () => Response): {
   fetchImpl: FetchLike;
   calls: Array<{ url: string | URL | Request; init: RequestInit | undefined }>;
 } {
   const calls: Array<{ url: string | URL | Request; init: RequestInit | undefined }> = [];
+  const factory = responseFactory ?? (() => new Response('{"code":200}', { status: 200 }));
   const fetchImpl: FetchLike = async (url, init) => {
     calls.push({ url, init });
-    return new Response(JSON.stringify({ code: 200 }), { status: 200 });
+    return factory();
   };
   return { fetchImpl, calls };
 }
