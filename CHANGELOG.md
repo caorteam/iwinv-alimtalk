@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.2](https://github.com/caorteam/iwinv-alimtalk/compare/v0.2.1...v0.2.2) (2026-06-29)
+
+
+### Bug Fixes
+
+* **pkg:** add repository metadata for npm provenance ([3905579](https://github.com/caorteam/iwinv-alimtalk/commit/3905579eac16521d4118a60bf5d24da9943c4bd6))
+
+
+### Continuous Integration
+
+* **release:** publish in the same run as release-please ([ff5ea3d](https://github.com/caorteam/iwinv-alimtalk/commit/ff5ea3d20f74622e8785ad76142c5969695b6f78))
+
 ## [0.2.1](https://github.com/caorteam/iwinv-alimtalk/compare/v0.2.0...v0.2.1) (2026-06-29)
 
 
