@@ -29,7 +29,21 @@
     "postbuild": "chmod +x dist/src/bin.js",
     "test": "npm run build && node --test dist/test/*.test.js",
     "test:coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-exclude='dist/test/**' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 dist/test/*.test.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{md,yml,yaml,json}": [
+      "prettier --write"
+    ]
   },
   "keywords": [
     "iwinv",
@@ -38,7 +52,15 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
     "@types/node": "^25.9.2",
-    "typescript": "^5.9.3"
+    "eslint": "^9.15.0",
+    "eslint-plugin-import": "^2.31.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.15.0"
   }
 }

@@ -18,29 +18,35 @@ npm run test:coverage   # same, with 100% line/branch/function gate
 
 Three layers, single direction of dependency:
 
-| Layer | File | Role |
-|-------|------|------|
-| Entry | [src/bin.ts](src/bin.ts) | Shebang → `main()`; sets `process.exitCode` |
-| CLI | [src/cli.ts](src/cli.ts) | `parseArgs`, `resolveCommand`, `readJsonBody`, `requestApi`/`buildDryRun`, output |
-| HTTP | [src/client.ts](src/client.ts) | Endpoints table, base64 AUTH, fetch, `ApiError`, dry-run builder |
-| Input | [src/input.ts](src/input.ts) | JSON source unification: `--json`, `--file`, stdin (async iterable) |
-| Public | [src/index.ts](src/index.ts) | Barrel — re-exports `client` + `input` |
+| Layer  | File                           | Role                                                                              |
+| ------ | ------------------------------ | --------------------------------------------------------------------------------- |
+| Entry  | [src/bin.ts](src/bin.ts)       | Shebang → `main()`; sets `process.exitCode`                                       |
+| CLI    | [src/cli.ts](src/cli.ts)       | `parseArgs`, `resolveCommand`, `readJsonBody`, `requestApi`/`buildDryRun`, output |
+| HTTP   | [src/client.ts](src/client.ts) | Endpoints table, base64 AUTH, fetch, `ApiError`, dry-run builder                  |
+| Input  | [src/input.ts](src/input.ts)   | JSON source unification: `--json`, `--file`, stdin (async iterable)               |
+| Public | [src/index.ts](src/index.ts)   | Barrel — re-exports `client` + `input`                                            |
 
 Execution flow: `bin` → `cli.main` → `parseArgs` → `resolveCommand` → `readJsonBody` (if needed) → `requestApi` or `buildDryRun` → stdout/stderr → exit.
 
 ## Core Conventions
 
 ### Zero runtime dependencies
-`package.json` has **no `dependencies` field**. Adding one is a breaking change. Use Node built-ins (`node:test`, `node:assert/strict`, `fetch`, `Buffer`, `fs/promises`).
+
+`package.json#dependencies` is **empty by design**. Adding one is a breaking change — it ships to every consumer of the package. Use Node built-ins (`node:test`, `node:assert/strict`, `fetch`, `Buffer`, `fs/promises`).
+
+`devDependencies` are a different category: they are installed only in dev/CI environments and are never shipped. Linters, formatters, and commit hooks (eslint, prettier, husky, lint-staged, commitlint) live there. Do not confuse the two policies when reviewing PRs.
 
 ### Adding a new endpoint
+
 The `endpoints` table in [src/client.ts](src/client.ts) is the single source of truth. To add support:
+
 1. Add entry to the `endpoints` map (method, path, whether body is required).
 2. `Command` and the dry-run/CLI types are **derived** from this map — keep types inferred, don't widen.
 3. Add a test in [test/client.test.ts](test/client.test.ts) for HTTP shape (mock fetch), and in [test/cli.test.ts](test/cli.test.ts) for argument validation.
 4. The 100% coverage gate will fail unless every branch is exercised.
 
 ### TypeScript style
+
 - ESM + `NodeNext` module resolution. **No `require()`**, no CommonJS interop tricks.
 - `verbatimModuleSyntax` is on → use `import type` for type-only imports.
 - `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` are on → treat index access and optional props as potentially `undefined`; never use `any`.
@@ -48,6 +54,7 @@ The `endpoints` table in [src/client.ts](src/client.ts) is the single source of 
 - Use `Object.freeze` + `satisfies Record<...>` for static + runtime safety (see endpoints table pattern).
 
 ### Import ordering
+
 The project has no automatic formatter (no Prettier, no ESLint), so the import order is enforced by humans. Follow this rule in every `.ts` file unless the file is already consistent with a different convention:
 
 1. **First block** — Node and external type-only imports, one per line:
@@ -68,11 +75,13 @@ The project has no automatic formatter (no Prettier, no ESLint), so the import o
 This keeps `verbatimModuleSyntax` happy and produces stable diffs when modules are added or moved.
 
 ### Error handling
+
 - **User input errors**: `throw new Error(...)` in helpers, catch in `main()` → print to stderr with usage hint → `exit 1`.
 - **API errors**: throw `ApiError(status, body)` from `client.ts`.
 - **Non-Error throws** must be stringified — assume anything could be thrown.
 
 ### CLI argument parsing
+
 - Manual loop in `parseArgs`; reject unknown options explicitly.
 - `--json` and `--file` are mutually exclusive.
 - `--api-key` flag overrides the `IWINV_ALIMTALK_API_KEY` environment variable (flag wins).
@@ -80,6 +89,7 @@ This keeps `verbatimModuleSyntax` happy and produces stable diffs when modules a
 - `--help` / `-h` **must be used alone**. Mixing it with any positional or other flag (commands, `--api-key`, `--json`, `--file`, `--dry-run`, `--pretty`) throws `--help must be used alone; it cannot be combined with other arguments.` This prevents `--help` from masking real parse errors (e.g. malformed JSON).
 
 ### Testing
+
 - **Framework**: Node built-in `node:test` + `node:assert/strict`. No Jest/Vitest.
 - **No real API calls** — always inject `fetch` via the `fetchImpl` parameter or replace `globalThis.fetch` temporarily.
 - **Stdin tests**: use the `JsonInputStdin` async iterable abstraction — pass a custom iterable, don't fork real streams unless the test specifically requires TTY behavior.
@@ -87,6 +97,7 @@ This keeps `verbatimModuleSyntax` happy and produces stable diffs when modules a
 - **File tests**: write to `tmpdir`, clean up.
 
 ### Coverage gate
+
 `npm run test:coverage` enforces **100/100/100** (line/branch/function). Every `if`, every `throw`, every default branch needs a test. Plan coverage before writing code.
 
 ## Things to watch out for
