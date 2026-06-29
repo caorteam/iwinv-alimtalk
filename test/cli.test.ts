@@ -1,6 +1,6 @@
-import { Writable, Readable } from 'node:stream';
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import { Readable, Writable } from 'node:stream';
+import test from 'node:test';
 import { main, parseArgs, resolveCommand } from '../src/cli.js';
 import { DRY_RUN_PLACEHOLDER } from '../src/client.js';
 import type { JsonInputStdin } from '../src/input.js';

@@ -1,8 +1,8 @@
 import type { Writable } from 'node:stream';
-import { buildDryRun, endpoints, requestApi, resolveBaseUrl } from './client.js';
 import type { Command } from './client.js';
-import { readJsonBody } from './input.js';
+import { buildDryRun, endpoints, requestApi, resolveBaseUrl } from './client.js';
 import type { JsonInputStdin } from './input.js';
+import { readJsonBody } from './input.js';
 
 const helpText = `iwinv-alimtalk - iwinv Alimtalk API CLI
 
