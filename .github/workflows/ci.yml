@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+# Cancel in-progress runs for the same branch when a new commit is pushed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal permissions: read repo contents only. No write access is needed
+# because this workflow only runs tests and uploads the coverage report.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: build + test + coverage on Node ${{ matrix.node }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Pin to the current LTS line. The "22.x" label expands to the
+        # latest 22 patch on the runner; engines.node >= 22 still gates
+        # compatibility in package.json.
+        node: [22]
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Type check (no emit)
+        run: npx tsc -p tsconfig.json --noEmit
+
+      - name: Run tests
+        run: npm test
+
+      - name: Enforce 100% coverage gate
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            dist/coverage
+            *.lcov
+          if-no-files-found: ignore
+          retention-days: 14
