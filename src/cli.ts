@@ -75,7 +75,7 @@ export async function main(argv: string[] = process.argv.slice(2), io: CliIo = {
     const command = resolveCommand(parsed.positionals);
     const endpoint = endpoints[command];
     const apiKey = parsed.apiKey ?? env.IWINV_ALIMTALK_API_KEY;
-    const baseUrl = env.IWINV_ALIMTALK_BASE_URL || resolveBaseUrl(env);
+    const baseUrl = resolveBaseUrl(env);
     const body = endpoint.body ? await readJsonBody({ json: parsed.json, file: parsed.file, stdin: io.stdin ?? process.stdin }) : undefined;
     const result = parsed.dryRun
       ? buildDryRun({ command, body, apiKey, baseUrl })
