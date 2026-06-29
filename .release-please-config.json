@@ -2,6 +2,7 @@
   "release-type": "node",
   "package-name": "@caor/iwinv-alimtalk",
   "include-component-in-tag": false,
+  "tag-format": "v${version}",
   "version": "0.1.0",
   "pull-request-title-pattern": "chore(release): ${version}",
   "extra-files": ["README.md", "README.en.md", "README.ko.md"],
