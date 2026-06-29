@@ -1,0 +1,59 @@
+name: publish
+
+# Triggered by a GitHub release created by release-please.
+# Publishes to npm with provenance so consumers can verify the package
+# was built from this repo by this workflow.
+#
+# Authentication uses npm Trusted Publishing (OIDC), not a long-lived
+# token. The npm package must be configured to trust this workflow once:
+#   https://docs.npmjs.com/generating-provenance-statements#publishing-packages-with-provenance-via-github-actions
+#
+# Until Trusted Publishing is enabled on the package, this workflow
+# will fail at the auth step. Fall back to setting NPM_TOKEN in the
+# repository secrets and swapping the auth step below.
+
+on:
+  release:
+    types: [published]
+
+# Default token only; we'll mint a short-lived npm token via OIDC.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          # registry-url: required for provenance via OIDC. The env vars
+          # NODE_AUTH_TOKEN is set automatically by the OIDC token step
+          # below when Trusted Publishing is configured.
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Type check (no emit)
+        run: npx tsc -p tsconfig.json --noEmit
+
+      - name: Run tests
+        run: npm test
+
+      - name: Enforce 100% coverage gate
+        run: npm run test:coverage
+
+      # Trusted Publishing via OIDC. Remove the next step and set
+      # NPM_TOKEN in repo secrets if OIDC is not yet configured.
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -5,3 +5,4 @@ reports/
 package-lock.json
 *.lcov
 node-test-junit.xml
+.release-please-manifest.json

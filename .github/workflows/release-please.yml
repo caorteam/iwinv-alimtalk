@@ -1,0 +1,39 @@
+name: release-please
+
+# release-please scans Conventional Commits on the default branch and
+# opens (or updates) a single release PR with:
+#   - bumped version in package.json
+#   - updated CHANGELOG.md
+#   - a GitHub release tag
+#
+# Merging the release PR triggers the publish.yml workflow, which
+# publishes to npm with provenance.
+
+on:
+  push:
+    branches: [main]
+
+# Need read for checkout + write for opening the release PR.
+permissions:
+  contents: write
+  pull-requests: write
+  # Required by release-please-action to create the release tag.
+  id-token: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # release-please needs the full history to detect changes
+          # since the last release tag.
+          fetch-depth: 0
+
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Use the config + manifest committed in the repo. This keeps
+          # release behavior reproducible and reviewable.
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
