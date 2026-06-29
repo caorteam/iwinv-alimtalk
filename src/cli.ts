@@ -123,6 +123,12 @@ export function parseArgs(argv: string[]): ParsedArgs {
   if (options.json !== undefined && options.file !== undefined) {
     throw new Error('Use only one body source: --json, --file, or stdin.');
   }
+
+  // --help must be used alone. Mixing it with commands or other flags would
+  // silently hide real errors (e.g. malformed --json), so we reject early.
+  if (options.help && (options.positionals.length > 0 || options.apiKey !== undefined || options.json !== undefined || options.file !== undefined || options.dryRun || options.pretty)) {
+    throw new Error('--help must be used alone; it cannot be combined with other arguments.');
+  }
   return options;
 }
 

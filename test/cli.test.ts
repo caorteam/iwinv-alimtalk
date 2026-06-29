@@ -118,6 +118,44 @@ test('parseArgs rejects combining --json and --file', () => {
   assert.throws(() => parseArgs(['send', '--json', '{}', '--file', 'body.json']), /only one body source/);
 });
 
+test('parseArgs accepts --help alone in any position', () => {
+  assert.equal(parseArgs(['--help']).help, true);
+  assert.equal(parseArgs(['-h']).help, true);
+  assert.equal(parseArgs(['--help', '-h']).help, true);
+  assert.equal(parseArgs(['-h', '--help']).help, true);
+});
+
+test('parseArgs rejects --help combined with other arguments', () => {
+  // Command + help
+  assert.throws(() => parseArgs(['send', '--help']), /--help must be used alone/);
+  assert.throws(() => parseArgs(['--help', 'send']), /--help must be used alone/);
+  // Help + other flags
+  assert.throws(() => parseArgs(['--help', '--pretty']), /--help must be used alone/);
+  assert.throws(() => parseArgs(['--pretty', '--help']), /--help must be used alone/);
+  assert.throws(() => parseArgs(['--help', '--dry-run']), /--help must be used alone/);
+  assert.throws(() => parseArgs(['--help', '--api-key', 'k']), /--help must be used alone/);
+  assert.throws(() => parseArgs(['--api-key', 'k', '--help']), /--help must be used alone/);
+  assert.throws(() => parseArgs(['--help', '--json', '{}']), /--help must be used alone/);
+  assert.throws(() => parseArgs(['--help', '--file', 'body.json']), /--help must be used alone/);
+});
+
+test('main hides malformed inputs behind --help is rejected by parseArgs', async () => {
+  // The previous behavior would print help and return 0 even when --json
+  // had a bad value. Now the parse error must surface so the user sees it.
+  const stdout = memoryWritable();
+  const stderr = memoryWritable();
+  const code = await main(['--help', '--json', '{bad'], {
+    stdout: stdout.stream,
+    stderr: stderr.stream,
+    stdin: emptyTtyStdin(),
+    env: {}
+  });
+
+  assert.equal(code, 1);
+  assert.equal(stdout.output(), '');
+  assert.match(stderr.output(), /--help must be used alone/);
+});
+
 test('resolveCommand reports every malformed command shape', () => {
   assert.throws(() => resolveCommand([]), /Missing command/);
   assert.throws(() => resolveCommand(['template']), /Missing template subcommand/);
