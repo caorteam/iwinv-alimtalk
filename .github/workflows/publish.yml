@@ -1,38 +1,71 @@
-name: publish
+name: release & publish
 
-# Triggered by a GitHub release created by release-please.
-# Publishes to npm with provenance so consumers can verify the package
-# was built from this repo by this workflow.
+# Single workflow that, on every push to main:
+#   1. release-please scans Conventional Commits and maintains one release
+#      PR (bumps version + CHANGELOG). Merging that PR makes release-please
+#      create the GitHub release + tag and set release_created=true.
+#   2. The publish job then builds, tests, and publishes to npm — in the
+#      SAME workflow run as the release.
 #
-# Authentication uses npm Trusted Publishing (OIDC), not a long-lived
-# token. Two prerequisites must both hold or the publish fails:
+# Why both jobs live here (and not a separate `release: published` workflow):
+# events raised by the default GITHUB_TOKEN do NOT start new workflow runs
+# (GitHub's recursion guard). A standalone publish workflow keyed off the
+# release event would therefore never fire when release-please cuts the
+# release. Running publish in the same run sidesteps that entirely.
 #
-#   1. npm CLI >= 11.5.1 on the runner. Node 22 ships npm 10.9.x, which
-#      has NO OIDC support — with no token it falls straight through to
-#      ENEEDAUTH. The "Upgrade npm" step below pulls a version that can
-#      mint an OIDC token.
-#   2. The package must list this repo + workflow as a Trusted Publisher:
-#        npmjs.com -> @caor/iwinv-alimtalk -> Settings -> Publishing access
-#        -> Trusted Publisher -> GitHub Actions
-#          Organization/user:  caorteam
-#          Repository:         iwinv-alimtalk
-#          Workflow filename:  publish.yml
-#      Until that is configured, OIDC exchange is rejected by the registry.
+# The file is named publish.yml on purpose: the npm Trusted Publisher
+# binding is pinned to this filename, so keeping it avoids reconfiguring
+# npm.
 #
-# See: https://docs.npmjs.com/trusted-publishers
+# Auth: npm Trusted Publishing (OIDC) — no long-lived token. Requires:
+#   - npm >= 11.5.1 on the runner (Node 22 bundles 10.9.x, which has no
+#     OIDC support); the "Upgrade npm" step handles this.
+#   - A Trusted Publisher entry on the package:
+#       npmjs.com -> @caor/iwinv-alimtalk -> Settings -> Publishing access
+#       -> Trusted Publisher -> GitHub Actions
+#         caorteam / iwinv-alimtalk / publish.yml
+#   - package.json "repository.url" matching the repo (provenance check).
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
 
-# Default token only; we'll mint a short-lived npm token via OIDC.
-permissions:
-  contents: read
-  id-token: write
+# No permissions by default; each job opts into exactly what it needs.
+permissions: {}
 
 jobs:
-  publish:
+  release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # release-please needs full history to detect changes since the
+          # last release tag.
+          fetch-depth: 0
+
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Use the config + manifest committed in the repo. This keeps
+          # release behavior reproducible and reviewable.
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    # Only when release-please actually cut a release on this run.
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for npm to mint a short-lived OIDC token for Trusted
+      # Publishing and to sign provenance.
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
