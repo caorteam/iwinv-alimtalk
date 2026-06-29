@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.1](https://github.com/caorteam/iwinv-alimtalk/compare/v0.2.0...v0.2.1) (2026-06-29)
+
+
+### Continuous Integration
+
+* **publish:** add OIDC environment debug step ([7ab9bd7](https://github.com/caorteam/iwinv-alimtalk/commit/7ab9bd7e56187ecb87ae06d42b0fa62683f4c244))
+* **publish:** add workflow_dispatch for manual trigger ([2a6c72d](https://github.com/caorteam/iwinv-alimtalk/commit/2a6c72dbf6aef2963af39fd28657c02ed44c6cab))
+* **publish:** also listen to 'released' event so release-please triggers it ([6357691](https://github.com/caorteam/iwinv-alimtalk/commit/6357691021e974a74cca2f15c6be0b41a21a0480))
+* **publish:** drop registry-url so npm uses OIDC for Trusted Publishing ([58a9761](https://github.com/caorteam/iwinv-alimtalk/commit/58a97614b7a3358f2247a2fc86f566ca650c7e40))
+* **publish:** drop workflow_dispatch; npm Trusted Publishing requires release events ([77cc1ce](https://github.com/caorteam/iwinv-alimtalk/commit/77cc1cecf13aea9b6a59e4c8dc6850b929a64047))
+* **publish:** enable verbose npm logging for debugging auth ([3b01847](https://github.com/caorteam/iwinv-alimtalk/commit/3b01847b0aa61985a3ee70ac48a420b58d83020e))
+* **publish:** revert to [published] only; npm Trusted Publishing requires release events ([7cb8a79](https://github.com/caorteam/iwinv-alimtalk/commit/7cb8a79505d512772710902127e6b4b5bdc596f7))
+* **publish:** switch to NPM_TOKEN authentication (granular, bypass 2fa) ([7046841](https://github.com/caorteam/iwinv-alimtalk/commit/704684124056ae5d994e88e223f921d2eae550a7))
+* **publish:** unset NODE_AUTH_TOKEN so npm uses OIDC for Trusted Publishing ([d277295](https://github.com/caorteam/iwinv-alimtalk/commit/d2772955d1f046adac2b023d10183649577f60b5))
+* **publish:** use npm OIDC Trusted Publishing (upgrade npm, drop token) ([5840989](https://github.com/caorteam/iwinv-alimtalk/commit/5840989c01f675209c44bdd0e8a2f9765c8a55a3))
+
 ## [0.2.0](https://github.com/caorteam/iwinv-alimtalk/compare/v0.1.0...v0.2.0) (2026-06-29)
 
 
