@@ -53,16 +53,12 @@ jobs:
       - name: Enforce 100% coverage gate
         run: npm run test:coverage
 
-      # Trusted Publishing via OIDC. The setup-node step above deliberately
-      # omits registry-url so that NODE_AUTH_TOKEN is not auto-populated
-      # with a GITHUB_TOKEN-derived token. npm then mints an OIDC token
-      # from the workflow run, verifies the package's Trusted Publisher
-      # list, and publishes.
-      - name: Debug OIDC environment
-        run: |
-          echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN=${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+SET}"
-          echo "ACTIONS_ID_TOKEN_REQUEST_URL=${ACTIONS_ID_TOKEN_REQUEST_URL:+SET}"
-          npm config get provenance
-          npm whoami --auth-type=legacy || echo "whoami (legacy) failed (expected without npm login)"
+      # Trusted Publishing via OIDC.
+      #
+      # setup-node@v4 exports NODE_AUTH_TOKEN to the environment even when
+      # `registry-url` is unset — leaving it as an empty string. npm sees
+      # the empty value, decides it is "not logged in", and short-circuits
+      # before it would otherwise mint an OIDC token via Trusted Publishing.
+      # Unsetting the variable explicitly forces npm down the OIDC path.
       - name: Publish to npm with provenance
-        run: npm publish --provenance --access public
+        run: unset NODE_AUTH_TOKEN && npm publish --provenance --access public
