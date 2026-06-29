@@ -70,7 +70,7 @@ The `endpoints` table in [src/client.ts](src/client.ts) is the single source of 
 
 ## Things to watch out for
 
-- **`engines.node >= 22`**, but [src/client.ts](src/client.ts) error messages reference Node 26 fetch behavior. If you touch those messages, reconcile the version claim.
+- **`engines.node >= 22`** and `src/client.ts` error messages now match (`Node 22+ built-in fetch is required`). Keep these in sync if either side changes.
 - The single-source body rule is enforced in **two places** (`cli.ts` and `input.ts`) as defense-in-depth. Don't consolidate them unless you can prove equivalence.
 - Dist is the runtime artifact — never `gitignore` it (it's in `package.json#files`). Don't hand-edit anything under `dist/`.
 
