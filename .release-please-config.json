@@ -1,32 +1,36 @@
 {
-  "release-type": "node",
-  "package-name": "@caor/iwinv-alimtalk",
-  "include-component-in-tag": false,
-  "tag-format": "v${version}",
-  "version": "0.1.0",
-  "pull-request-title-pattern": "chore(release): ${version}",
-  "extra-files": ["README.md", "README.en.md", "README.ko.md"],
-  "groups": [
-    {
-      "name": "Dependencies and CI",
-      "type": "chore",
-      "includes": ["ci", "deps", "build"],
-      "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": false
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "@caor/iwinv-alimtalk",
+      "include-component-in-tag": false,
+      "tag-format": "v${version}",
+      "version": "0.1.0",
+      "pull-request-title-pattern": "chore(release): ${version}",
+      "extra-files": ["README.md", "README.en.md", "README.ko.md"],
+      "groups": [
+        {
+          "name": "Dependencies and CI",
+          "type": "chore",
+          "includes": ["ci", "deps", "build"],
+          "bump-minor-pre-major": true,
+          "bump-patch-for-minor-pre-major": false
+        }
+      ],
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "perf", "section": "Performance" },
+        { "type": "revert", "section": "Reverts" },
+        { "type": "docs", "section": "Documentation", "hidden": false },
+        { "type": "style", "section": "Style", "hidden": true },
+        { "type": "refactor", "section": "Code Refactoring" },
+        { "type": "test", "section": "Tests", "hidden": true },
+        { "type": "build", "section": "Build System" },
+        { "type": "ci", "section": "Continuous Integration" },
+        { "type": "chore", "section": "Miscellaneous Chores" },
+        { "type": "deps", "section": "Dependencies" }
+      ]
     }
-  ],
-  "changelog-sections": [
-    { "type": "feat", "section": "Features" },
-    { "type": "fix", "section": "Bug Fixes" },
-    { "type": "perf", "section": "Performance" },
-    { "type": "revert", "section": "Reverts" },
-    { "type": "docs", "section": "Documentation", "hidden": false },
-    { "type": "style", "section": "Style", "hidden": true },
-    { "type": "refactor", "section": "Code Refactoring" },
-    { "type": "test", "section": "Tests", "hidden": true },
-    { "type": "build", "section": "Build System" },
-    { "type": "ci", "section": "Continuous Integration" },
-    { "type": "chore", "section": "Miscellaneous Chores" },
-    { "type": "deps", "section": "Dependencies" }
-  ]
+  }
 }
