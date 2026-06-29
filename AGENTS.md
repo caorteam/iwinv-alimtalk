@@ -117,3 +117,7 @@ These cover usage, API, and dev workflow — **link, don't duplicate**:
 - [README.en.md](README.en.md) — English version
 - [README.ko.md](README.ko.md) — Korean version
 - [LICENSE](LICENSE) — MIT
+
+## Release Pipeline
+
+Releases are driven by `release-please` on `main` and published by `.github/workflows/publish.yml` via npm Trusted Publishing (OIDC). Merging the release PR opens a GitHub Release whose `published` event triggers the workflow — no manual `npm publish` required. The full agent workflow for adding an endpoint is documented under [Architecture](#architecture).
