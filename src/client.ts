@@ -1,5 +1,13 @@
+import type { FetchLike } from './util.js';
+
 const DEFAULT_BASE_URL = 'https://alimtalk.bizservice.iwinv.kr';
 const JSON_CONTENT_TYPE = 'application/json;charset=UTF-8';
+
+/**
+ * Node version string used in the "fetch not available" error message.
+ * Kept in sync with `package.json#engines.node`.
+ */
+export const MIN_NODE_VERSION = '22';
 
 /**
  * Stable placeholder substituted for the API key in dry-run output.
@@ -33,8 +41,6 @@ export type Command = keyof typeof endpoints;
 type Env = {
   IWINV_ALIMTALK_BASE_URL?: string | undefined;
 };
-
-type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 type RequestApiOptions = {
   command: Command;
@@ -104,7 +110,9 @@ export async function requestApi({
   const endpoint = endpoints[command];
   if (!apiKey) throw new Error('Missing API key. Use --api-key or IWINV_ALIMTALK_API_KEY.');
   if (typeof fetchImpl !== 'function')
-    throw new Error('fetch is not available. Node 22+ built-in fetch is required.');
+    throw new Error(
+      `fetch is not available. Node ${MIN_NODE_VERSION}+ built-in fetch is required.`
+    );
 
   const hasJsonBody = endpoint.method !== 'GET';
   const init: RequestInit = {
@@ -137,7 +145,7 @@ export function buildDryRun({
   // placeholder). We deliberately do NOT fall back on empty strings:
   // a missing key in a dry-run means "show what the request would look
   // like", not "send an empty AUTH header".
-  const key = apiKey && apiKey.length > 0 ? apiKey : DRY_RUN_PLACEHOLDER;
+  const key = apiKey || DRY_RUN_PLACEHOLDER;
   const auth = encodeAuth(key);
   const headers: Record<string, string> = { AUTH: redactAuth(auth) };
   if (hasJsonBody) headers['Content-Type'] = JSON_CONTENT_TYPE;
