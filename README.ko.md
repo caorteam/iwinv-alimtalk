@@ -55,16 +55,16 @@ try {
 
 모든 API 요청은 iwinv `AUTH` 헤더에 `base64_encode(API Key)` 값을 사용합니다. JSON 요청은 `Content-Type: application/json;charset=UTF-8`을 사용합니다.
 
-| 명령어 | Method | Endpoint | Body |
-| --- | --- | --- | --- |
-| `send` | `POST` | `/api/v2/send/` | JSON |
-| `template list` | `POST` | `/api/template/` | JSON |
-| `template add` | `POST` | `/api/template/add/` | JSON |
+| 명령어            | Method | Endpoint                | Body |
+| ----------------- | ------ | ----------------------- | ---- |
+| `send`            | `POST` | `/api/v2/send/`         | JSON |
+| `template list`   | `POST` | `/api/template/`        | JSON |
+| `template add`    | `POST` | `/api/template/add/`    | JSON |
 | `template modify` | `POST` | `/api/template/modify/` | JSON |
 | `template delete` | `POST` | `/api/template/delete/` | JSON |
-| `history` | `POST` | `/api/history/` | JSON |
-| `cancel` | `POST` | `/api/cancel/` | JSON |
-| `charge` | `GET` | `/api/charge/` | 없음 |
+| `history`         | `POST` | `/api/history/`         | JSON |
+| `cancel`          | `POST` | `/api/cancel/`          | JSON |
+| `charge`          | `GET`  | `/api/charge/`          | 없음 |
 
 ## JSON Body 입력
 

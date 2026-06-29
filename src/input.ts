@@ -11,7 +11,11 @@ type ReadJsonBodyOptions = {
   stdin?: JsonInputStdin | undefined;
 };
 
-export async function readJsonBody({ json, file, stdin = process.stdin }: ReadJsonBodyOptions = {}): Promise<unknown> {
+export async function readJsonBody({
+  json,
+  file,
+  stdin = process.stdin
+}: ReadJsonBodyOptions = {}): Promise<unknown> {
   const explicitSources = (json !== undefined ? 1 : 0) + (file !== undefined ? 1 : 0);
   if (explicitSources > 1) throw new Error('Use only one body source: --json, --file, or stdin.');
 

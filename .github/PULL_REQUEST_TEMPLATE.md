@@ -30,26 +30,26 @@ Fill free-form sections; remove any section that does not apply.
 - [ ] `npx tsc -p tsconfig.json --noEmit` passes with zero errors
 - [ ] No `any` was introduced; new unknown data is narrowed explicitly
 - [ ] No new `import` statements mix type-only and value imports on one line
-  (see [AGENTS.md → Import ordering](../blob/develop/AGENTS.md))
+      (see [AGENTS.md → Import ordering](../blob/develop/AGENTS.md))
 
 ### Project invariants
 
 - [ ] **No new runtime dependencies** were added to `package.json`.
-  Dev-dependency additions must be justified in the PR description.
+      Dev-dependency additions must be justified in the PR description.
 - [ ] The `endpoints` table in `src/client.ts` remains the single source
-  of truth for commands and HTTP shape.
+      of truth for commands and HTTP shape.
 - [ ] If this PR changes CLI surface (`endpoints`, `parseArgs`, flags),
-  README.md / README.ko.md / README.en.md are updated.
+      README.md / README.ko.md / README.en.md are updated.
 - [ ] If this PR changes `AGENTS.md` content, the matching
-  `.github/instructions/*.md` files are checked for consistency.
+      `.github/instructions/*.md` files are checked for consistency.
 
 ### CLI behavior
 
 - [ ] `--help` / `-h` remains a standalone-only flag
 - [ ] Dry-run output never contains the real API key
-  (use `DRY_RUN_PLACEHOLDER`; see `src/client.ts`)
+      (use `DRY_RUN_PLACEHOLDER`; see `src/client.ts`)
 - [ ] New error messages match the existing tone and end with a clear
-  remediation hint where applicable
+      remediation hint where applicable
 
 ### Documentation
 

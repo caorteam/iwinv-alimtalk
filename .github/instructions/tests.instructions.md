@@ -1,6 +1,6 @@
 ---
-description: "Use when writing or modifying test files under test/** — covers the 100% coverage gate, mock-only fetch, and node:test idioms required by this repo."
-applyTo: "test/**/*.ts"
+description: 'Use when writing or modifying test files under test/** — covers the 100% coverage gate, mock-only fetch, and node:test idioms required by this repo.'
+applyTo: 'test/**/*.ts'
 ---
 
 # Test Conventions

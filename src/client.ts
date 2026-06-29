@@ -103,7 +103,8 @@ export async function requestApi({
 }: RequestApiOptions): Promise<unknown> {
   const endpoint = endpoints[command];
   if (!apiKey) throw new Error('Missing API key. Use --api-key or IWINV_ALIMTALK_API_KEY.');
-  if (typeof fetchImpl !== 'function') throw new Error('fetch is not available. Node 22+ built-in fetch is required.');
+  if (typeof fetchImpl !== 'function')
+    throw new Error('fetch is not available. Node 22+ built-in fetch is required.');
 
   const hasJsonBody = endpoint.method !== 'GET';
   const init: RequestInit = {

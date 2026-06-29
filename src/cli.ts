@@ -1,8 +1,9 @@
+import { buildDryRun, endpoints, requestApi, resolveBaseUrl } from './client.js';
+import { readJsonBody } from './input.js';
+
 import type { Writable } from 'node:stream';
 import type { Command } from './client.js';
-import { buildDryRun, endpoints, requestApi, resolveBaseUrl } from './client.js';
 import type { JsonInputStdin } from './input.js';
-import { readJsonBody } from './input.js';
 
 const helpText = `iwinv-alimtalk - iwinv Alimtalk API CLI
 
@@ -60,7 +61,10 @@ export type ParsedArgs = {
   help: boolean;
 };
 
-export async function main(argv: string[] = process.argv.slice(2), io: CliIo = {}): Promise<number> {
+export async function main(
+  argv: string[] = process.argv.slice(2),
+  io: CliIo = {}
+): Promise<number> {
   const stdout = io.stdout ?? process.stdout;
   const stderr = io.stderr ?? process.stderr;
   const env = io.env ?? process.env;
@@ -76,10 +80,22 @@ export async function main(argv: string[] = process.argv.slice(2), io: CliIo = {
     const endpoint = endpoints[command];
     const apiKey = parsed.apiKey ?? env.IWINV_ALIMTALK_API_KEY;
     const baseUrl = resolveBaseUrl(env);
-    const body = endpoint.body ? await readJsonBody({ json: parsed.json, file: parsed.file, stdin: io.stdin ?? process.stdin }) : undefined;
+    const body = endpoint.body
+      ? await readJsonBody({
+          json: parsed.json,
+          file: parsed.file,
+          stdin: io.stdin ?? process.stdin
+        })
+      : undefined;
     const result = parsed.dryRun
       ? buildDryRun({ command, body, apiKey, baseUrl })
-      : await requestApi({ command, body, apiKey, baseUrl, fetchImpl: io.fetchImpl ?? globalThis.fetch });
+      : await requestApi({
+          command,
+          body,
+          apiKey,
+          baseUrl,
+          fetchImpl: io.fetchImpl ?? globalThis.fetch
+        });
 
     writeLine(stdout, formatOutput(result, parsed.pretty));
     return 0;
@@ -126,7 +142,15 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
   // --help must be used alone. Mixing it with commands or other flags would
   // silently hide real errors (e.g. malformed --json), so we reject early.
-  if (options.help && (options.positionals.length > 0 || options.apiKey !== undefined || options.json !== undefined || options.file !== undefined || options.dryRun || options.pretty)) {
+  if (
+    options.help &&
+    (options.positionals.length > 0 ||
+      options.apiKey !== undefined ||
+      options.json !== undefined ||
+      options.file !== undefined ||
+      options.dryRun ||
+      options.pretty)
+  ) {
     throw new Error('--help must be used alone; it cannot be combined with other arguments.');
   }
   return options;
@@ -153,7 +177,8 @@ function isCommand(command: string): command is Command {
 
 function readOptionValue(argv: string[], index: number, option: string): string {
   const value = argv[index];
-  if (value === undefined || value.startsWith('--')) throw new Error(`Missing value for ${option}.`);
+  if (value === undefined || value.startsWith('--'))
+    throw new Error(`Missing value for ${option}.`);
   return value;
 }
 

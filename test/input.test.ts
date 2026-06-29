@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+
 import { readJsonBody } from '../src/input.js';
+
 import type { JsonInputStdin } from '../src/input.js';
 
 function readableStdin(chunks: string[], isTTY: boolean): JsonInputStdin {
@@ -41,7 +43,10 @@ test('reads body from a file', async () => {
 });
 
 test('rejects when more than one body source is supplied', async () => {
-  await assert.rejects(() => readJsonBody({ json: '{}', file: 'body.json' }), /only one body source/);
+  await assert.rejects(
+    () => readJsonBody({ json: '{}', file: 'body.json' }),
+    /only one body source/
+  );
 });
 
 test('reads stdin that does not expose setEncoding', async () => {

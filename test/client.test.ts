@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+
 import {
   ApiError,
   buildDryRun,
@@ -20,7 +21,8 @@ type FetchCall = {
 type FetchLike = (url: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 function headerValue(init: RequestInit | undefined, name: string): string | undefined {
-  if (!init?.headers || init.headers instanceof Headers || Array.isArray(init.headers)) return undefined;
+  if (!init?.headers || init.headers instanceof Headers || Array.isArray(init.headers))
+    return undefined;
   return init.headers[name];
 }
 
@@ -67,7 +69,12 @@ test('requestApi sends charge as GET without JSON content type or body', async (
     return new Response(JSON.stringify({ code: 200, charge: 10000 }), { status: 200 });
   };
 
-  const result = await requestApi({ command: 'charge', apiKey: 'secret', baseUrl: 'http://localhost:3000', fetchImpl });
+  const result = await requestApi({
+    command: 'charge',
+    apiKey: 'secret',
+    baseUrl: 'http://localhost:3000',
+    fetchImpl
+  });
 
   const call = calls[0];
   assert.deepEqual(result, { code: 200, charge: 10000 });
@@ -110,7 +117,14 @@ test('requestApi throws ApiError carrying status and parsed body on non-ok respo
     new Response(JSON.stringify({ code: 400, message: 'bad request' }), { status: 400 });
 
   await assert.rejects(
-    () => requestApi({ command: 'send', body: {}, apiKey: 'k', baseUrl: 'https://mock.example', fetchImpl }),
+    () =>
+      requestApi({
+        command: 'send',
+        body: {},
+        apiKey: 'k',
+        baseUrl: 'https://mock.example',
+        fetchImpl
+      }),
     (error: unknown) => {
       assert.ok(error instanceof ApiError);
       assert.equal(error.status, 400);
@@ -156,13 +170,23 @@ test('requestApi defaults POST body to empty object when omitted', async () => {
 
 test('requestApi returns null for an empty response body', async () => {
   const fetchImpl: FetchLike = async () => new Response('', { status: 200 });
-  const result = await requestApi({ command: 'charge', apiKey: 'k', baseUrl: 'https://mock.example', fetchImpl });
+  const result = await requestApi({
+    command: 'charge',
+    apiKey: 'k',
+    baseUrl: 'https://mock.example',
+    fetchImpl
+  });
   assert.equal(result, null);
 });
 
 test('requestApi returns raw text when the response is not JSON', async () => {
   const fetchImpl: FetchLike = async () => new Response('plain text', { status: 200 });
-  const result = await requestApi({ command: 'charge', apiKey: 'k', baseUrl: 'https://mock.example', fetchImpl });
+  const result = await requestApi({
+    command: 'charge',
+    apiKey: 'k',
+    baseUrl: 'https://mock.example',
+    fetchImpl
+  });
   assert.equal(result, 'plain text');
 });
 
@@ -192,7 +216,12 @@ test('buildDryRun substitutes a placeholder when apiKey is omitted', () => {
 });
 
 test('buildDryRun substitutes a placeholder when apiKey is an empty string', () => {
-  const result = buildDryRun({ command: 'send', body: {}, apiKey: '', baseUrl: 'https://mock.example' });
+  const result = buildDryRun({
+    command: 'send',
+    body: {},
+    apiKey: '',
+    baseUrl: 'https://mock.example'
+  });
   const auth = result.headers.AUTH;
   if (auth === undefined) assert.fail('AUTH header missing in dry-run output');
   // Even an explicit empty string must not leak through as an empty AUTH.
@@ -204,7 +233,12 @@ test('buildDryRun substitutes a placeholder when apiKey is an empty string', () 
 
 test('buildDryRun redacts a caller-supplied real key the same way', () => {
   const realKey = 'this-is-a-real-secret-key-1234567890';
-  const result = buildDryRun({ command: 'send', body: {}, apiKey: realKey, baseUrl: 'https://mock.example' });
+  const result = buildDryRun({
+    command: 'send',
+    body: {},
+    apiKey: realKey,
+    baseUrl: 'https://mock.example'
+  });
   const auth = result.headers.AUTH;
   if (auth === undefined) assert.fail('AUTH header missing in dry-run output');
   // Real key bytes must never appear verbatim in the redacted header.
@@ -221,7 +255,10 @@ test('buildHeaders omits content type when there is no JSON body', () => {
 
 test('resolveBaseUrl falls back to the default when no override is set', () => {
   assert.equal(resolveBaseUrl({}), 'https://alimtalk.bizservice.iwinv.kr');
-  assert.equal(resolveBaseUrl({ IWINV_ALIMTALK_BASE_URL: 'https://override.example' }), 'https://override.example');
+  assert.equal(
+    resolveBaseUrl({ IWINV_ALIMTALK_BASE_URL: 'https://override.example' }),
+    'https://override.example'
+  );
 });
 
 test('buildUrl normalizes base URLs with and without a trailing slash', () => {

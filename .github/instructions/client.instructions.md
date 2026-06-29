@@ -1,6 +1,6 @@
 ---
-description: "Use when editing src/client.ts or the endpoints table — covers the AUTH encoding, the derived Command type pattern, and the dry-run builder."
-applyTo: "src/client.ts"
+description: 'Use when editing src/client.ts or the endpoints table — covers the AUTH encoding, the derived Command type pattern, and the dry-run builder.'
+applyTo: 'src/client.ts'
 ---
 
 # HTTP Client Layer Rules

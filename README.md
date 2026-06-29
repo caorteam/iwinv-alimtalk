@@ -55,16 +55,16 @@ Set `IWINV_ALIMTALK_API_KEY` to the raw API key exactly as issued. Do not pre-en
 
 All API requests use the iwinv `AUTH` header as `base64_encode(API Key)`. JSON requests use `Content-Type: application/json;charset=UTF-8`.
 
-| Command | Method | Endpoint | Body |
-| --- | --- | --- | --- |
-| `send` | `POST` | `/api/v2/send/` | JSON |
-| `template list` | `POST` | `/api/template/` | JSON |
-| `template add` | `POST` | `/api/template/add/` | JSON |
+| Command           | Method | Endpoint                | Body |
+| ----------------- | ------ | ----------------------- | ---- |
+| `send`            | `POST` | `/api/v2/send/`         | JSON |
+| `template list`   | `POST` | `/api/template/`        | JSON |
+| `template add`    | `POST` | `/api/template/add/`    | JSON |
 | `template modify` | `POST` | `/api/template/modify/` | JSON |
 | `template delete` | `POST` | `/api/template/delete/` | JSON |
-| `history` | `POST` | `/api/history/` | JSON |
-| `cancel` | `POST` | `/api/cancel/` | JSON |
-| `charge` | `GET` | `/api/charge/` | none |
+| `history`         | `POST` | `/api/history/`         | JSON |
+| `cancel`          | `POST` | `/api/cancel/`          | JSON |
+| `charge`          | `GET`  | `/api/charge/`          | none |
 
 ## JSON Body Input
 

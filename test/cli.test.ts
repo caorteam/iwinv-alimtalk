@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { Readable, Writable } from 'node:stream';
 import test from 'node:test';
+
 import { main, parseArgs, resolveCommand } from '../src/cli.js';
 import { DRY_RUN_PLACEHOLDER } from '../src/client.js';
+
 import type { JsonInputStdin } from '../src/input.js';
 
 type FetchLike = (url: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -11,7 +13,11 @@ function memoryWritable(): { stream: Writable; output: () => string } {
   let output = '';
   return {
     stream: new Writable({
-      write(chunk: Buffer | string, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+      write(
+        chunk: Buffer | string,
+        _encoding: BufferEncoding,
+        callback: (error?: Error | null) => void
+      ) {
         output += chunk.toString();
         callback();
       }
@@ -25,12 +31,16 @@ function emptyTtyStdin(): JsonInputStdin {
 }
 
 function headerValue(init: RequestInit | undefined, name: string): string | undefined {
-  if (!init?.headers || init.headers instanceof Headers || Array.isArray(init.headers)) return undefined;
+  if (!init?.headers || init.headers instanceof Headers || Array.isArray(init.headers))
+    return undefined;
   return init.headers[name];
 }
 
 test('parses commands and options', () => {
-  assert.deepEqual(parseArgs(['template', 'list', '--json', '{}', '--pretty']).positionals, ['template', 'list']);
+  assert.deepEqual(parseArgs(['template', 'list', '--json', '{}', '--pretty']).positionals, [
+    'template',
+    'list'
+  ]);
   assert.equal(resolveCommand(['template', 'modify']), 'template modify');
   assert.equal(resolveCommand(['history']), 'history');
 });
@@ -62,16 +72,19 @@ test('dry-run does not call fetch and prints redacted request details', async ()
   const stderr = memoryWritable();
   let called = false;
 
-  const code = await main(['send', '--json', '{"templateCode":"10030","list":[]}', '--dry-run', '--pretty'], {
-    stdout: stdout.stream,
-    stderr: stderr.stream,
-    stdin: emptyTtyStdin(),
-    env: { IWINV_ALIMTALK_BASE_URL: 'https://mock.example' },
-    fetchImpl: async () => {
-      called = true;
-      return new Response('{}');
+  const code = await main(
+    ['send', '--json', '{"templateCode":"10030","list":[]}', '--dry-run', '--pretty'],
+    {
+      stdout: stdout.stream,
+      stderr: stderr.stream,
+      stdin: emptyTtyStdin(),
+      env: { IWINV_ALIMTALK_BASE_URL: 'https://mock.example' },
+      fetchImpl: async () => {
+        called = true;
+        return new Response('{}');
+      }
     }
-  });
+  );
 
   assert.equal(code, 0);
   assert.equal(called, false);
@@ -91,7 +104,12 @@ test('dry-run does not call fetch and prints redacted request details', async ()
 test('help prints usage', async () => {
   const stdout = memoryWritable();
   const stderr = memoryWritable();
-  const code = await main(['--help'], { stdout: stdout.stream, stderr: stderr.stream, stdin: emptyTtyStdin(), env: {} });
+  const code = await main(['--help'], {
+    stdout: stdout.stream,
+    stderr: stderr.stream,
+    stdin: emptyTtyStdin(),
+    env: {}
+  });
 
   assert.equal(code, 0);
   assert.match(stdout.output(), /Commands:/);
@@ -115,7 +133,10 @@ test('parseArgs rejects a missing option value', () => {
 });
 
 test('parseArgs rejects combining --json and --file', () => {
-  assert.throws(() => parseArgs(['send', '--json', '{}', '--file', 'body.json']), /only one body source/);
+  assert.throws(
+    () => parseArgs(['send', '--json', '{}', '--file', 'body.json']),
+    /only one body source/
+  );
 });
 
 test('parseArgs accepts --help alone in any position', () => {
@@ -163,13 +184,21 @@ test('resolveCommand reports every malformed command shape', () => {
   assert.throws(() => resolveCommand(['template', 'bogus']), /Unknown template subcommand: bogus/);
   assert.throws(() => resolveCommand(['charge', 'extra']), /Unexpected argument: extra/);
   assert.throws(() => resolveCommand(['bogus']), /Unknown command: bogus/);
-  assert.throws(() => resolveCommand(['template', 'list', undefined as unknown as string]), /Unexpected argument:/);
+  assert.throws(
+    () => resolveCommand(['template', 'list', undefined as unknown as string]),
+    /Unexpected argument:/
+  );
 });
 
 test('main returns 1 and writes the error to stderr on failure', async () => {
   const stdout = memoryWritable();
   const stderr = memoryWritable();
-  const code = await main(['bogus'], { stdout: stdout.stream, stderr: stderr.stream, stdin: emptyTtyStdin(), env: {} });
+  const code = await main(['bogus'], {
+    stdout: stdout.stream,
+    stderr: stderr.stream,
+    stdin: emptyTtyStdin(),
+    env: {}
+  });
 
   assert.equal(code, 1);
   assert.equal(stdout.output(), '');
