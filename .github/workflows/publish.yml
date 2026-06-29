@@ -31,12 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          # NOTE: registry-url is intentionally omitted. When set,
-          # setup-node exports NODE_AUTH_TOKEN as a GITHUB_TOKEN-derived
-          # npm token, which npm then prefers over the OIDC token it
-          # would otherwise mint automatically for Trusted Publishing.
-          # Leaving it unset lets npm fall through to OIDC + Trusted
-          # Publisher verification, which is what we actually want.
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm ci
@@ -53,12 +48,10 @@ jobs:
       - name: Enforce 100% coverage gate
         run: npm run test:coverage
 
-      # Trusted Publishing via OIDC.
-      #
-      # setup-node@v4 exports NODE_AUTH_TOKEN to the environment even when
-      # `registry-url` is unset — leaving it as an empty string. npm sees
-      # the empty value, decides it is "not logged in", and short-circuits
-      # before it would otherwise mint an OIDC token via Trusted Publishing.
-      # Unsetting the variable explicitly forces npm down the OIDC path.
+      # Authenticated with NPM_TOKEN (granular access token, bypass 2FA).
+      # setup-node's registry-url above exports NODE_AUTH_TOKEN to the
+      # environment using the secret value; npm uses it directly.
       - name: Publish to npm with provenance
-        run: unset NODE_AUTH_TOKEN && npm publish --provenance --access public
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
