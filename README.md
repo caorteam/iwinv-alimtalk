@@ -171,3 +171,7 @@ npm run test:coverage
 ```
 
 `npm test` runs the TypeScript build first, then executes the compiled tests from `dist/test`. `npm run test:coverage` additionally enforces 100% line, branch, and function coverage on `src/` (requires Node 22.8+). The package has no runtime dependencies and uses Node's built-in `node:test`, `assert`, `fetch`, and `Buffer` APIs.
+
+## Release & Publishing
+
+Releases are automated via [release-please](https://github.com/googleapis/release-please) on `main`. Conventional Commits drive version bumps and CHANGELOG generation; merging the resulting release PR triggers `.github/workflows/publish.yml`, which publishes to npm with provenance using [Trusted Publishing](https://docs.npmjs.com/generating-provenance-statements) (OIDC) — no long-lived token required.
