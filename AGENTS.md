@@ -47,6 +47,26 @@ The `endpoints` table in [src/client.ts](src/client.ts) is the single source of 
 - Prefer `unknown` over `any` for error/data; narrow explicitly.
 - Use `Object.freeze` + `satisfies Record<...>` for static + runtime safety (see endpoints table pattern).
 
+### Import ordering
+The project has no automatic formatter (no Prettier, no ESLint), so the import order is enforced by humans. Follow this rule in every `.ts` file unless the file is already consistent with a different convention:
+
+1. **First block** — Node and external type-only imports, one per line:
+   ```ts
+   import type { Writable } from 'node:stream';
+   import type { Command } from './client.js';
+   ```
+2. **Second block** — value imports for Node and external modules, one per line:
+   ```ts
+   import assert from 'node:assert/strict';
+   import { Readable, Writable } from 'node:stream';
+   import { main, parseArgs, resolveCommand } from '../src/cli.js';
+   import { readJsonBody } from '../src/input.js';
+   ```
+3. Within each block, order alphabetically by module specifier (case-insensitive). When a module exports both a type and a value, place the type-only form first.
+4. Never mix type-only and value imports on the same line.
+
+This keeps `verbatimModuleSyntax` happy and produces stable diffs when modules are added or moved.
+
 ### Error handling
 - **User input errors**: `throw new Error(...)` in helpers, catch in `main()` → print to stderr with usage hint → `exit 1`.
 - **API errors**: throw `ApiError(status, body)` from `client.ts`.
